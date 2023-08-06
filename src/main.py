@@ -263,7 +263,7 @@ if __name__ == "__main__" :
 
     parser.add_argument('--local_size', type = int, default=2000, help='size of data for each client')  # Optional num_clients argument
     parser.add_argument('--batch_size', type = int, default=128, help='Batch size')  # Optional num_clients argument
-    parser.add_argument('--rounds', type = int, default=150, help='Number of global') # Optional rounds argument
+    parser.add_argument('--rounds', type = int, default=61, help='Number of global') # Optional rounds argument
     parser.add_argument('--local_epochs', type = int, default=1, help='Number of epochs') # Optional epochs argument
     parser.add_argument('--lr', type = float, default=0.1, help='Learning rate') # Optional learning rate argument
 
