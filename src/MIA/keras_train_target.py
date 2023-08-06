@@ -79,8 +79,8 @@ log_path = join(CFG_ATTACK.target_model_path, 'training.log')
 model_path = join(CFG_ATTACK.target_model_path, 'best_model.h5')
 
 callbacks = [] 
-callbacks.append(EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min', restore_best_weights=True))
-callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, mode='min'))
+# callbacks.append(EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min', restore_best_weights=True))
+# callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, mode='min'))
 callbacks.append(CSVLogger(log_path))
 callbacks.append(ModelCheckpoint(model_path, monitor='val_loss', verbose=1, save_best_only=True, mode='min'))
 

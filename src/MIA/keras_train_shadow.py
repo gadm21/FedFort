@@ -92,8 +92,8 @@ for i in range(CFG.num_shadow_models) :
     attack_dset_path = join(this_shadow_model_path, f'attack_dset_shadow_{i}.csv')
 
     callbacks = [] 
-    callbacks.append(EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min', restore_best_weights=True))
-    callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, mode='min'))
+    # callbacks.append(EarlyStopping(monitor='val_loss', patience=10, verbose=1, mode='min', restore_best_weights=True))
+    # callbacks.append(ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=5, verbose=1, mode='min'))
     callbacks.append(CSVLogger(log_path))
     callbacks.append(ModelCheckpoint(model_path, monitor='val_loss', verbose=1, save_best_only=True, mode='min'))
 
