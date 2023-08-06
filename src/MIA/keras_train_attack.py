@@ -31,8 +31,8 @@ seed_everything(CFG.seed)
 
 X, y = pd.DataFrame(), pd.DataFrame()
 
-# for i in range(CFG.num_shadow_models) : 
-for i in range(3) : 
+# for i in range(10) : 
+for i in range(CFG.num_shadow_models//2) : 
 
     this_shadow_model_path = join(CFG_ATTACK.shadow_models_path, f"shadow_model_{i}")
     if not os.path.exists(this_shadow_model_path):
