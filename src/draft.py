@@ -24,32 +24,34 @@ transform = transforms.Compose(
 testset = torchvision.datasets.CIFAR10(root="./data", train=False, download=True, transform=transform)
 trainset = torchvision.datasets.CIFAR10(root="./data", train=True, download=True, transform=transform)
 
+print("trainset:", len(trainset))
+print("testset:", len(testset))
 
-exp_dir = RESULTS_PATH
-experiments = [join(exp_dir, f) for f in listdir(exp_dir) if isdir(join(exp_dir, f))]
-for exp in experiments : 
-    model_path = join(exp, 'model.h5')
+# exp_dir = RESULTS_PATH
+# experiments = [join(exp_dir, f) for f in listdir(exp_dir) if isdir(join(exp_dir, f))]
+# for exp in experiments : 
+#     model_path = join(exp, 'model.h5')
 
-    if not os.path.exists(model_path):
-        continue
+#     if not os.path.exists(model_path):
+#         continue
 
-    # load model
-    model = load_model(model_path, custom_objects={'DPKerasSGDOptimizer': DPKerasSGDOptimizer})
-    n_batches = 100 
-    all_true, all_pred = [], []
-    for batch in np.split(testset, n_batches) :
-        x_test, y_test = batch
-        y_test = np.argmax(y_test, axis=1)
-        y_pred = model.predict(x_test)
-        y_pred = np.argmax(y_pred, axis=1)
-        all_true.append(y_test)
-        all_pred.append(y_pred)
-    all_true = np.concatenate(all_true)
-    all_pred = np.concatenate(all_pred)
-    acc = np.mean(all_true == all_pred)
-    print("acc:", acc)
+#     # load model
+#     model = load_model(model_path, custom_objects={'DPKerasSGDOptimizer': DPKerasSGDOptimizer})
+#     n_batches = 100 
+#     all_true, all_pred = [], []
+#     for batch in np.split(testset, n_batches) :
+#         x_test, y_test = batch
+#         y_test = np.argmax(y_test, axis=1)
+#         y_pred = model.predict(x_test)
+#         y_pred = np.argmax(y_pred, axis=1)
+#         all_true.append(y_test)
+#         all_pred.append(y_pred)
+#     all_true = np.concatenate(all_true)
+#     all_pred = np.concatenate(all_pred)
+#     acc = np.mean(all_true == all_pred)
+#     print("acc:", acc)
 
 
-    print(exp) 
+#     print(exp) 
 
 ############################################# 

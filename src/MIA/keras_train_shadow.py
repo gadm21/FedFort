@@ -50,22 +50,22 @@ transform = transforms.Compose(
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
     ]
 )
-df_attack_dset = pd.DataFrame({}, columns=[str(i) for i in range(CFG.num_classes)] + ["is_member"])
+
 
 if not os.path.exists(CFG_ATTACK.shadow_models_path):
     os.makedirs(CFG_ATTACK.shadow_models_path)
 
-for i in range(CFG.num_shadow_models) : 
+for i in range(CFG.num_shadow_models, CFG.num_shadow_models * 10) : 
     trainset = DSET_CLASS(root="./data", train=True, download=True, transform=transform)
     testset = DSET_CLASS(root="./data", train=False, download=True, transform=transform)
 
-    trainloader = DataLoader(trainset, batch_size=len(trainset), shuffle=True, num_workers=0)
-    testloader = DataLoader(testset, batch_size=len(testset), shuffle=False, num_workers=0)
+    trainloader = DataLoader(trainset,  shuffle=True, num_workers=0)
+    testloader = DataLoader(testset,  shuffle=False, num_workers=0)
     
     # subst of trainset with same length as testset
     random_indc = np.random.choice(len(trainset), len(testset), replace=False)
     small_trainset = Subset(trainset, random_indc.tolist())
-    small_trainloader = DataLoader(small_trainset, batch_size=len(small_trainset), shuffle=True, num_workers=0)
+    small_trainloader = DataLoader(small_trainset, shuffle=True, num_workers=0)
     #  
 
     train_x, train_y = next(iter(trainloader))
@@ -107,6 +107,7 @@ for i in range(CFG.num_shadow_models) :
     df_non_member = pd.DataFrame(nonmember_dset, columns=[str(i) for i in range(CFG.num_classes)])
     df_non_member["is_member"] = 0
 
+    df_attack_dset = pd.DataFrame({}, columns=[str(i) for i in range(CFG.num_classes)] + ["is_member"])
     df_attack_dset = pd.concat([df_attack_dset, df_member, df_non_member])
     df_attack_dset.to_csv(
         attack_dset_path,
