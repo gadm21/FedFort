@@ -104,10 +104,11 @@ plt.ylabel("True Positive Rate")
 plt.title("ROC curve")
 plt.legend(loc="lower right")
 plt.show()
-plt.savefig("roc.png")
-
 if not os.path.exists(CFG_ATTACK.attack_model_path):
     os.makedirs(CFG_ATTACK.attack_model_path)
+
+plt.savefig(join(CFG_ATTACK.attack_model_path, "roc_curve.png"))
+
 
 save_path = join(CFG_ATTACK.attack_model_path, "catboost_1")
 model.save_model(save_path)
