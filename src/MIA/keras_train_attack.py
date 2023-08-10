@@ -17,7 +17,7 @@ from catboost import CatBoostClassifier
 import os 
 from os.path import join
 from tensorflow.keras.models import load_model
-
+from keras_utils import CustomDropout
 
 # load config
 config_path = "keras_config.yaml"
@@ -32,7 +32,7 @@ seed_everything(CFG.seed)
 X, y = pd.DataFrame(), pd.DataFrame()
 
 # for i in range(10) : 
-for i in range(27) : 
+for i in range(52) : 
 
     this_shadow_model_path = join(CFG_ATTACK.shadow_models_path, f"shadow_model_{i}")
     if not os.path.exists(this_shadow_model_path):
@@ -41,7 +41,7 @@ for i in range(27) :
     model_path = join(this_shadow_model_path, 'best_model.h5')
     attack_dset_path = join(this_shadow_model_path, f'attack_dset_shadow_{i}.csv')
 
-    model = load_model(model_path)
+    model = load_model(model_path,  custom_objects={'CustomDropout': CustomDropout})
     df_shadow = pd.read_csv(attack_dset_path)
 
     tmp_y = df_shadow["is_member"]
@@ -71,8 +71,8 @@ print("y_test shape:", y_test.shape)
 # model = xgb.XGBClassifier(n_estimators=CFG_ATTACK.n_estimators, n_jobs=-1, random_state=CFG.seed)
 # model = lgb.LGBMClassifier(n_estimators=CFG_ATTACK.n_estimators, n_jobs=-1, random_state=CFG.seed)
 model = CatBoostClassifier(
-    iterations=CFG_ATTACK.train_epoch,
-    depth=2,
+    iterations=CFG_ATTACK.attack_train_epoch,
+    depth=7,
     learning_rate=CFG_ATTACK.learning_rate,
     loss_function="Logloss",
     verbose=True,
@@ -99,6 +99,8 @@ plt.plot(fpr, tpr, label="MIA ROC curve (area = %0.2f)" % auc(fpr, tpr))
 plt.plot([0, 1], [0, 1], "k--")
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
+# log scale y axis
+plt.yscale("log")
 plt.xlabel("False Positive Rate")
 plt.ylabel("True Positive Rate")
 plt.title("ROC curve")

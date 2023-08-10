@@ -35,6 +35,7 @@ CFG_ATTACK:
   attack_model_path: attack
   test_size: 0.2
   train_epoch: 60
+  attack_train_epoch: 200
   learning_rate: 0.25
   n_estimators: 100
   roc_curve_path: ./assets/roc_cifar10.png

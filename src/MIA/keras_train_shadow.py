@@ -55,7 +55,7 @@ transform = transforms.Compose(
 if not os.path.exists(CFG_ATTACK.shadow_models_path):
     os.makedirs(CFG_ATTACK.shadow_models_path)
 
-for i in range(28, CFG.num_shadow_models * 10) : 
+for i in range(41, CFG.num_shadow_models * 10) : 
     trainset = DSET_CLASS(root="./data", train=True, download=True, transform=transform)
     testset = DSET_CLASS(root="./data", train=False, download=True, transform=transform)
 

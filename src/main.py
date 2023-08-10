@@ -212,11 +212,11 @@ def run_path2(args) :
     
     learning_algorithms = ['fedavg', 'fedakd', 'fedsgd']
     datasets = ['cifar10']
-    local_sizes = [500, 2000]
-    local_epochss = [2, 5] 
+    local_sizes = [500]
+    local_epochss = [2] 
     
     epsilons = [1000.0, 100.0, 50.0, 10.0, 1.0]
-    dp_norm_clips = [1.0, 2.0, 3.0]
+    dp_norm_clips = [1.0]
     dp_types = ['dp', 'adv_cmp', 'rdp', 'zcdp']
     lrs = [0.1]
 

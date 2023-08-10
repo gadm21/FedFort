@@ -4,9 +4,9 @@ import tensorflow as tf
 
 
 class CustomDropout(tf.keras.layers.Dropout):
-    def __init__(self, rate, inference_rate, **kwargs):
+    def __init__(self, rate, **kwargs):
         super(CustomDropout, self).__init__(rate, **kwargs)
-        self.inference_dropout_rate = inference_rate
+        self.inference_dropout_rate = 0.1
 
     def call(self, inputs, training=None):
         if training is None:
@@ -33,7 +33,7 @@ def get_cnn_keras_model(input_shape, num_classes, weight_decay=0.0000, compile_m
             activation='relu',
             input_shape= input_shape),
         tf.keras.layers.MaxPool2D(2, 2),
-        CustomDropout(0.2, inference_rate = 0.1),
+        CustomDropout(0.2),
         tf.keras.layers.Conv2D(
             32, 3, strides=1, padding='same', activation='relu'),
         tf.keras.layers.MaxPool2D(2, 2),
