@@ -87,6 +87,7 @@ for i in range(41, CFG.num_shadow_models * 10) :
     input_shape = train_x.shape[1:]
     model = get_cnn_keras_model(input_shape, num_classes = CFG.num_classes, compile_model = True)
 
+     
     log_path = join(this_shadow_model_path, 'training.log')
     model_path = join(this_shadow_model_path, 'best_model.h5')
     attack_dset_path = join(this_shadow_model_path, f'attack_dset_shadow_{i}.csv')
