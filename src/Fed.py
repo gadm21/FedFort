@@ -1,12 +1,12 @@
 
 
 
-from utils import *
+from utils import * 
 from tensorflow.keras.models import clone_model
 # import exists and mkdir from os.path
 from os.path import exists, join
 from os import mkdir
-
+import time 
 
 
 def new_aggregate(weights) : 
@@ -156,7 +156,6 @@ class FedSGD :
 
 
 
-
 class FedAvg :
 
     def __init__(self, exp_path, clients_data, test_data, initial_model, args) : 
@@ -176,12 +175,17 @@ class FedAvg :
         self.clients_models = []
         for c in range(len(clients_data) ) : 
             model = clone_model(initial_model)
-            model = compile_model(model, args) 
+            new_args = update_args_with_dict(args, {'use_dp': False})
+            model = compile_model(model, new_args) 
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=1, batch_size = self.args.batch_size, verbose=1)
             self.clients_models.append(model)
         self.losses, self.accs = [], []
 
     def run(self, rounds, local_epochs = 1) :
-        for r in range(rounds) : 
+
+    
+        for r in range(rounds) :
+            t0 = time.time() 
             weights = [] 
             for c in range(len(self.clients_data)) : 
                 self.download_server_model(c)
@@ -193,42 +197,42 @@ class FedAvg :
             loss, acc = self.test()
 
 
-            if ((r+1) % 30) == 0 :
-                print("Saving the model and stats")
-                res_path = join(self.exp_path, 'epoch_' + str(r+1))
-                if not exists(res_path) : 
-                    mkdir(res_path)
+            # if ((r+1) % 30) == 0 :
+            #     print("Saving the model and stats")
+            #     res_path = join(self.exp_path, 'epoch_' + str(r+1))
+            #     if not exists(res_path) : 
+            #         mkdir(res_path)
 
-                self.server_model = compile_model(self.server_model, self.args)
+            #     self.server_model = compile_model(self.server_model, self.args)
                 
-                loss_fnn = tf.keras.losses.CategoricalCrossentropy(reduction = 'none')
-                train_preds, train_losses = model_stats(self.server_model, self.all_samples, self.all_labels, loss_fnn)
-                test_preds, test_losses = model_stats(self.server_model, self.test_data[0], self.test_data[1], loss_fnn)
+            #     loss_fnn = tf.keras.losses.CategoricalCrossentropy(reduction = 'none')
+            #     train_preds, train_losses = model_stats(self.server_model, self.all_samples, self.all_labels, loss_fnn)
+            #     test_preds, test_losses = model_stats(self.server_model, self.test_data[0], self.test_data[1], loss_fnn)
 
-                # save model 
-                model_path = join(res_path, 'model.h5')
-                # self.server_model.save(model_path)
+            #     # save model 
+            #     model_path = join(res_path, 'model.h5')
+            #     # self.server_model.save(model_path)
 
-                # save stats
-                train_preds_path = join(res_path, 'train_preds.npy')
-                train_losses_path = join(res_path, 'train_losses.npy')
-                test_preds_path = join(res_path, 'test_preds.npy')
-                test_losses_path = join(res_path, 'test_losses.npy')
-                np.save(train_preds_path, train_preds)
-                np.save(train_losses_path, train_losses)
-                np.save(test_preds_path, test_preds)
-                np.save(test_losses_path, test_losses)
-                np.save(test_losses_path, test_losses)
+            #     # save stats
+            #     train_preds_path = join(res_path, 'train_preds.npy')
+            #     train_losses_path = join(res_path, 'train_losses.npy')
+            #     test_preds_path = join(res_path, 'test_preds.npy')
+            #     test_losses_path = join(res_path, 'test_losses.npy')
+            #     np.save(train_preds_path, train_preds)
+            #     np.save(train_losses_path, train_losses)
+            #     np.save(test_preds_path, test_preds)
+            #     np.save(test_losses_path, test_losses)
+            #     np.save(test_losses_path, test_losses)
                 
 
-
-            print("FedAvg round {}, accuracy:{} ".format(r, acc))
+            t1 = time.time()
+            print("FedAvg round {}, time:{}, accuracy:{} ".format(r, t1-t0, acc))
             # if len(self.accs ) > 11: 
             #     # check if accuracy is not improving
             #     if np.mean(np.subtract(self.accs[-10:], self.accs[-11:-1])) < 0.01:
             #         print("Breaking the training loop as I am not improving anymore :(")
             #         break
-
+            return acc 
             
 
     def download_server_model(self, client_id) :
@@ -324,7 +328,8 @@ class FedProx :
             
             weights_agg = new_aggregate(weights)
             self.update_server_model(weights_agg)
-            self.test()
+            loss, acc = self.test()
+            print("FedProx round {}, accuracy:{} ".format(r, acc))
 
             if ((r+1) % 30) == 0 :
                 print("Saving the model and stats")
@@ -352,7 +357,7 @@ class FedProx :
                 np.save(test_preds_path, test_preds)
                 np.save(test_losses_path, test_losses)
                 np.save(test_losses_path, test_losses)
-
+        return acc
             
 
     def create_fedprox_loss(self, c, round_initial_weights, mu, reduce_mean = True):
@@ -432,7 +437,8 @@ class FedAKD:
         self.args = args
         self.clients_data = clients_data
         self.test_data = test_data
-        self.proxy_data = proxy_data
+        self.proxy_data = proxy_data[0]
+        self.proxy_labels = proxy_data[1]
 
 
         self.all_samples, self.all_labels = [], []
@@ -456,7 +462,19 @@ class FedAKD:
         for id in range(len(clients_data)):
             args.client_id = id
             model = clients_model_fn(args, compile_model = False)     
-            model = compile_model(model, args) 
+            
+            # initial training
+            model.compile(
+            loss="mean_absolute_error",
+            optimizer="adam",
+            metrics=['accuracy'])
+
+            train_keras_model(model = model, train_data = (self.proxy_data, self.proxy_labels), test_data = None, epochs=3, batch_size = self.args.batch_size, verbose=1)
+            new_args = update_args_with_dict(args, {'use_dp': False})
+            model = compile_model(model, new_args) 
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=2, batch_size = self.args.batch_size, verbose=1)
+            
+            
             self.clients_models.append(model)
 
 
@@ -468,7 +486,9 @@ class FedAKD:
 
     def run(self, rounds, local_epochs = 1):
 
+
         for r in range(rounds): 
+            t0 = time.time()
             print("FedAKD round : ", r)
 
             # 0. Mixup proxy data
@@ -499,35 +519,13 @@ class FedAKD:
                 # 6. Update original client models with the new weights
                 self.clients_models[c].set_weights(self.smoothed_clients_models[c].get_weights())
             
-            kd_acc = self.test()
-            print("KD accuracy : ", kd_acc)
+            kd_loss, kd_acc = self.test()
+            t1 = time.time()
+            print("FedAKD round {}, accuracy:{} ".format(r, kd_acc))
+        return kd_acc
+            
 
-            if ((r+1) % 30) == 0 :
-                print("Saving the model and stats")
-                res_path = join(self.exp_path, 'epoch_' + str(r+1))
-                if not exists(res_path) : 
-                    mkdir(res_path)
 
-                self.server_model = compile_model(self.server_model, self.args)
-                
-                loss_fnn = tf.keras.losses.CategoricalCrossentropy(reduction = 'none')
-                train_preds, train_losses = model_stats(self.server_model, self.all_samples, self.all_labels, loss_fnn)
-                test_preds, test_losses = model_stats(self.server_model, self.test_data[0], self.test_data[1], loss_fnn)
-
-                # save model 
-                model_path = join(res_path, 'model.h5')
-                # self.server_model.save(model_path)
-
-                # save stats
-                train_preds_path = join(res_path, 'train_preds.npy')
-                train_losses_path = join(res_path, 'train_losses.npy')
-                test_preds_path = join(res_path, 'test_preds.npy')
-                test_losses_path = join(res_path, 'test_losses.npy')
-                np.save(train_preds_path, train_preds)
-                np.save(train_losses_path, train_losses)
-                np.save(test_preds_path, test_preds)
-                np.save(test_losses_path, test_losses)
-                np.save(test_losses_path, test_losses)
 
 
     def create_temperature_scaled_model(self, initial_model, temperature):
@@ -584,4 +582,54 @@ class FedAKD:
         np.save(acc_path, self.accs)
         np.save(loss_path, self.losses)
         # np.save(perm_path, self.args.perm)
+
+
+
+def run_local(train_data, test_data, args, proxy_data = None) : 
+    pass 
+
+
+def run_central(model, train_data, test_data, args, proxy_data = None) : 
+    if isinstance(train_data, list) : 
+        X, y = [], [] 
+        for data in train_data :
+            X.append(data[0])
+            y.append(data[1])
+        X = np.concatenate(X, axis=0)
+        y = np.concatenate(y, axis=0)
+        train_data = (X, y)
     
+    t0 = time.time() 
+    history = train_keras_model(model, train_data, test_data, epochs = args.rounds, batch_size = args.batch_size) 
+    t1 = time.time()
+    train_time = t1 - t0
+
+    return model, history, train_time
+
+
+
+
+
+def run_fedavg(model, train_data, test_data, args, proxy_data = None) : 
+
+    fedavg = FedAvg(clients_data = train_data, test_data = test_data, initial_model = model, args = args)
+    
+    t0 = time.time() 
+    fedavg.run(args.rounds, args.local_epochs) 
+    t1 = time.time()
+    train_time = t1 - t0
+
+    return model, train_time
+
+
+
+def run_fedakd(model, train_data, test_data, args, proxy_data) : 
+
+    fedakd = FedAKD(clients_data = train_data, test_data = test_data, proxy_data = proxy_data, clients_model_fn = create_model_based_on_data, args = args)
+    
+    t0 = time.time() 
+    fedakd.run(args.rounds, args.local_epochs) 
+    t1 = time.time()
+    train_time = t1 - t0
+
+    return model, train_time

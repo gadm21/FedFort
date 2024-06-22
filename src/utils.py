@@ -213,7 +213,6 @@ def create_new_cnn_keras_model(input_shape, num_classes, weight_decay=0.0000, co
         tf.keras.layers.MaxPool2D(2, 1),
         tf.keras.layers.Conv2D(
             32, 4, strides=2, padding='valid', activation='relu'),
-        tf.keras.layers.MaxPool2D(2, 1),
         tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(32, activation='relu'),
         tf.keras.layers.Dense(num_classes)
