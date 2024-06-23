@@ -323,14 +323,14 @@ if __name__ == "__main__" :
 
     # FL parameters
     parser.add_argument('--id', default = None, help='Experiment ID')  # Optional id argument
-    parser.add_argument('--dataset', default = 'mnist', metavar='DATASET', help='Specify the dataset')  # Mandatory dataset argument
+    parser.add_argument('--dataset', default = 'cifar10', metavar='DATASET', help='Specify the dataset')  # Mandatory dataset argument
     parser.add_argument('--learning_algorithm', default='fedavg', help='central, local, fedavg, fedmd, fedakd')  # Optional learning_algorithm argument
-    parser.add_argument('--proxy_data_size', type = int, default=3000, help='Number of epochs') # Optional epochs argument
+    parser.add_argument('--proxy_data_size', type = int, default=5000, help='Number of epochs') # Optional epochs argument
     parser.add_argument('--num_clients', type = int, default=7, help='Number of clients participating in FL')  # Optional num_clients argument
-    parser.add_argument('--local_size', type = int, default=1000, help='size of data for each client')  # Optional num_clients argument
-    parser.add_argument('--batch_size', type = int, default=16, help='Batch size')  # Optional num_clients argument
+    parser.add_argument('--local_size', type = int, default=2000, help='size of data for each client')  # Optional num_clients argument
+    parser.add_argument('--batch_size', type = int, default=26, help='Batch size')  # Optional num_clients argument
     parser.add_argument('--rounds', type = int, default=30, help='Number of global') # Optional rounds argument
-    parser.add_argument('--local_epochs', type = int, default=3, help='Number of epochs') # Optional epochs argument
+    parser.add_argument('--local_epochs', type = int, default=4, help='Number of epochs') # Optional epochs argument
     parser.add_argument('--lr', type = float, default=0.1, help='Learning rate') # Optional learning rate argument
     
     # callbacks

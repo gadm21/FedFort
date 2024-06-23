@@ -177,7 +177,8 @@ class FedAvg :
             model = clone_model(initial_model)
             new_args = update_args_with_dict(args, {'use_dp': False})
             model = compile_model(model, new_args) 
-            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=1, batch_size = self.args.batch_size, verbose=1)
+            print("initial training done for client ", id)
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=1)
             self.clients_models.append(model)
         self.losses, self.accs = [], []
 
@@ -469,10 +470,12 @@ class FedAKD:
             optimizer="adam",
             metrics=['accuracy'])
 
-            train_keras_model(model = model, train_data = (self.proxy_data, self.proxy_labels), test_data = None, epochs=3, batch_size = self.args.batch_size, verbose=1)
+            print("initial alignment done for client ", id)
+            train_keras_model(model = model, train_data = (self.proxy_data, self.proxy_labels), test_data = None, epochs=20, batch_size = self.args.batch_size, verbose=1)
             new_args = update_args_with_dict(args, {'use_dp': False})
             model = compile_model(model, new_args) 
-            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=2, batch_size = self.args.batch_size, verbose=1)
+            print("initial training done for client ", id)
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=1)
             
             
             self.clients_models.append(model)

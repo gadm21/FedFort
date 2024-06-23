@@ -1,0 +1,4 @@
+Central accuracy: 0.9513154029846191 
+Local accuracy: 0.9513154029846191 
+fedavg Time taken: 146.68719720840454 seconds 
+fedavg Accuracy: 0.29089999198913574 
