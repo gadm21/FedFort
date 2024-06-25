@@ -34,13 +34,13 @@ def run_new_experiment(id, args) :
     model = compile_model(model, args)
 
     exp_fn = learning_functions[args.learning_algorithm.lower()]
-    model, time = exp_fn(model, clients_data, test_data, args, proxy_data = proxy_data)
+    model, times = exp_fn(model, clients_data, test_data, args, proxy_data = proxy_data)
 
     # save history
     # pd.DataFrame(history.history).to_csv(join(experiment_dir, 'history.csv'))
     # save time 
     with open(join(experiment_dir, 'time.txt'), 'w') as f:
-        f.write(str(time))
+        f.write(str(times))
     
 
 
@@ -79,28 +79,16 @@ def run_experiment(id, args) :
             'csv_logger_path' : join(experiment_dir, 'centralized.csv')
         }
         t0 = time.time()
-        history = train_keras_model(centralized_model, train_data, test_data, epochs=args.rounds, batch_size = args.batch_size, verbose=1, **callbacks)
+        print("Central training started...")
+        history = train_keras_model(centralized_model, train_data, test_data, epochs=args.rounds, batch_size = args.batch_size, verbose=0, **callbacks)
         t1 = time.time()
         print("Central time taken: " + str(t1-t0) + " seconds")
 
 
-        loss_fnn = tf.keras.losses.CategoricalCrossentropy(reduction = 'none')
-        train_preds, train_losses = model_stats(centralized_model, train_data[0], train_data[1], loss_fnn)
-        test_preds, test_losses = model_stats(centralized_model, test_data[0], test_data[1], loss_fnn)
-
-        # save model 
-        model_path = join(experiment_dir, 'model.h5')
-        centralized_model.save(model_path)
-
-        # save stats
-        train_preds_path = join(experiment_dir, 'train_preds.npy')
-        train_losses_path = join(experiment_dir, 'train_losses.npy')
-        test_preds_path = join(experiment_dir, 'test_preds.npy')
-        test_losses_path = join(experiment_dir, 'test_losses.npy')
-        np.save(train_preds_path, train_preds)
-        np.save(train_losses_path, train_losses)
-        np.save(test_preds_path, test_preds)
-        np.save(test_losses_path, test_losses)
+        print("central accuracy: ", history.history['val_accuracy'][-1])
+        # append to resultstxtfile
+        with open(results_txt_file, 'a') as f:  
+            f.write(f"Central accuracy: {history.history['val_accuracy'][-1]} \n")
         
     # ___________________________________________________________________________________________________
     elif args.learning_algorithm == 'local' :
@@ -117,49 +105,23 @@ def run_experiment(id, args) :
             }
             history = train_keras_model(client_model, clients_data[client_id], test_data, epochs=args.rounds, batch_size = args.batch_size, verbose=0, **callbacks)
 
-            loss_fnn = tf.keras.losses.CategoricalCrossentropy(reduction = 'none')
-            train_preds, train_losses = model_stats(centralized_model, train_data[0], train_data[1], loss_fnn)
-            test_preds, test_losses = model_stats(centralized_model, test_data[0], test_data[1], loss_fnn)
-            client_path = join(experiment_dir, f'client_{client_id}.h5')
-            # save model 
-            model_path = join(client_path, 'model.h5')
-            centralized_model.save(model_path)
+            print(f"Client {client_id} accuracy: ", history.history['val_accuracy'][-1])
 
-            # save stats
-            train_preds_path = join(client_path, 'train_preds.npy')
-            train_losses_path = join(client_path, 'train_losses.npy')
-            test_preds_path = join(client_path, 'test_preds.npy')
-            test_losses_path = join(client_path, 'test_losses.npy')
-            np.save(train_preds_path, train_preds)
-            np.save(train_losses_path, train_losses)
-            np.save(test_preds_path, test_preds)
-            np.save(test_losses_path, test_losses)
-        perm_path = join(experiment_dir, 'perm.npy')
-        np.save(perm_path, p)
+            # append to resultstxtfile
+            with open(results_txt_file, 'a') as f:
+                f.write(f"Client {client_id} accuracy: {history.history['val_accuracy'][-1]} \n")
+            break 
         
     # ___________________________________________________________________________________________________
     elif 'fed' in args.learning_algorithm :
 
         centralized_data, clients_data, external_data, p = split_data(train_data, args.num_clients, args.local_size)
 
-        # local training
-        local_model = create_model_based_on_data(args, compile_model = False)
-        new_args = update_args_with_dict(args, {'use_dp' : False})
-        local_model = compile_model(local_model, new_args)
-        history = train_keras_model(local_model, clients_data[0], test_data, epochs=args.rounds*2, batch_size = args.batch_size, verbose=1)
-        print("local accuracy: ", history.history['accuracy'][-1])
+        original_use_dp = args.use_dp
 
 
-        # central training 
-        centralized_model = create_model_based_on_data(args, compile_model = False)
-        centralized_model = compile_model(centralized_model, new_args)
-        history = train_keras_model(centralized_model, centralized_data, test_data, epochs=args.rounds*2, batch_size = args.batch_size, verbose=1)
-        print("central accuracy: ", history.history['accuracy'][-1])
-        # append to resultstxtfile
-        with open(results_txt_file, 'a') as f:
-            f.write(f"Central accuracy: {history.history['accuracy'][-1]} \n")
-            f.write(f"Local accuracy: {history.history['accuracy'][-1]} \n")
 
+        args = update_args_with_dict(args, {'use_dp' : original_use_dp})
 
         # save perm
         perm_path = join(experiment_dir, 'perm.npy')
@@ -210,18 +172,17 @@ def run_experiment(id, args) :
             raise ValueError('Invalid learning algorithm')
         
         t0 = time.time() 
-        acc = learning_algorithm.run(args.rounds, args.local_epochs )
+        accuracies, times = learning_algorithm.run(args.rounds, args.local_epochs )
         t1 = time.time()
         print(f"{args.learning_algorithm} Time taken: " + str(t1-t0) + " seconds")
         #append to resultstxtfile
         with open(results_txt_file, 'a') as f:
-            f.write(f"{args.learning_algorithm} Time taken: {str(t1-t0)} seconds \n")
-            f.write(f"{args.learning_algorithm} Accuracy: {acc} \n")
+            f.write(f"{args.learning_algorithm} Time taken: {times} seconds \n")
+            f.write(f"{args.learning_algorithm} Accuracy: {accuracies} \n")
 
         learning_algorithm.save_scores() 
 
-
-    
+        run_time = t1 - t0
     # ___________________________________________________________________________________________________
     else :
         raise ValueError('Invalid learning algorithm')
@@ -230,7 +191,7 @@ def run_experiment(id, args) :
         json.dump(vars(args), f)
     # save time 
     with open(join(experiment_dir, 'time.txt'), 'w') as f:
-        f.write(str(time))
+        f.write(str(run_time))
 
 
 def run_path1(args) : 
@@ -239,12 +200,13 @@ def run_path1(args) :
     if args.learning_algorithm == 'central' :
         learning_algorithms = ['central', 'local']
     else : 
-        learning_algorithms = ['fedavg', 'fedakd']
+        learning_algorithms = ['fedavg']
 
+    pprefix = 'tvt++++'
     if not args.use_dp :
         for learning_algorithm in learning_algorithms : 
             args.learning_algorithm = learning_algorithm
-            experiment_id = 'tvt+' + args.dataset + '_' + args.learning_algorithm + '_' + str(args.use_dp) + '_' + datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+            experiment_id = pprefix + args.dataset + '_' + args.learning_algorithm + '_' + str(args.use_dp) + '_' + datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
             
             print("Running experiment " + experiment_id) 
             print("Arguments: " + str(args)) 
@@ -258,7 +220,7 @@ def run_path1(args) :
             for ep in dp_epsilons :
                 for learning_algorithm in learning_algorithms : 
                     args.learning_algorithm = learning_algorithm
-                    experiment_id = 'tvt+'+ args.dataset + '_' + args.learning_algorithm + '_' + str(args.use_dp) + '_' + datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
+                    experiment_id = pprefix + args.dataset + '_' + args.learning_algorithm + '_' + str(args.use_dp) + '_' + datetime.now().strftime("%d_%m_%Y_%H_%M_%S")
                     
                     args.dp_epsilon = ep
                     args.dp_type = dp_type
@@ -326,12 +288,12 @@ if __name__ == "__main__" :
     parser.add_argument('--dataset', default = 'cifar10', metavar='DATASET', help='Specify the dataset')  # Mandatory dataset argument
     parser.add_argument('--learning_algorithm', default='fedavg', help='central, local, fedavg, fedmd, fedakd')  # Optional learning_algorithm argument
     parser.add_argument('--proxy_data_size', type = int, default=5000, help='Number of epochs') # Optional epochs argument
-    parser.add_argument('--num_clients', type = int, default=7, help='Number of clients participating in FL')  # Optional num_clients argument
-    parser.add_argument('--local_size', type = int, default=2000, help='size of data for each client')  # Optional num_clients argument
+    parser.add_argument('--num_clients', type = int, default=10, help='Number of clients participating in FL')  # Optional num_clients argument
+    parser.add_argument('--local_size', type = int, default=3000, help='size of data for each client')  # Optional num_clients argument
     parser.add_argument('--batch_size', type = int, default=26, help='Batch size')  # Optional num_clients argument
     parser.add_argument('--rounds', type = int, default=30, help='Number of global') # Optional rounds argument
     parser.add_argument('--local_epochs', type = int, default=4, help='Number of epochs') # Optional epochs argument
-    parser.add_argument('--lr', type = float, default=0.1, help='Learning rate') # Optional learning rate argument
+    parser.add_argument('--lr', type = float, default=0.01, help='Learning rate') # Optional learning rate argument
     
     # callbacks
     parser.add_argument('--early_stop_patience', type = int, default=-1, help='Patience of Early stopping callback') # early stopping patience

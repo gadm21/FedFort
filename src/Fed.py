@@ -172,19 +172,23 @@ class FedAvg :
         self.all_samples = np.concatenate(self.all_samples, axis=0)
         self.all_labels = np.concatenate(self.all_labels, axis=0)
 
+        oiriginal_use_dp = args.use_dp
+        new_args = update_args_with_dict(args, {'use_dp': False})
         self.clients_models = []
         for c in range(len(clients_data) ) : 
             model = clone_model(initial_model)
-            new_args = update_args_with_dict(args, {'use_dp': False})
+
             model = compile_model(model, new_args) 
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=0)
             print("initial training done for client ", id)
-            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=1)
             self.clients_models.append(model)
+
+        self.args = update_args_with_dict(args, {'use_dp': oiriginal_use_dp})
         self.losses, self.accs = [], []
 
     def run(self, rounds, local_epochs = 1) :
 
-    
+        times, accuracies = [], []
         for r in range(rounds) :
             t0 = time.time() 
             weights = [] 
@@ -228,12 +232,14 @@ class FedAvg :
 
             t1 = time.time()
             print("FedAvg round {}, time:{}, accuracy:{} ".format(r, t1-t0, acc))
+            times.append(t1-t0)
+            accuracies.append(acc)
             # if len(self.accs ) > 11: 
             #     # check if accuracy is not improving
             #     if np.mean(np.subtract(self.accs[-10:], self.accs[-11:-1])) < 0.01:
             #         print("Breaking the training loop as I am not improving anymore :(")
             #         break
-            return acc 
+        return accuracies, times
             
 
     def download_server_model(self, client_id) :
@@ -460,25 +466,28 @@ class FedAKD:
         self.losses, self.local_loss = [], []
         self.accs, self.local_accuracy = [], []
         
+        original_use_dp = args.use_dp
+        new_args = update_args_with_dict(args, {'use_dp': False})
         for id in range(len(clients_data)):
             args.client_id = id
             model = clients_model_fn(args, compile_model = False)     
             
             # initial training
             model.compile(
-            loss="mean_absolute_error",
-            optimizer="adam",
-            metrics=['accuracy'])
-
+                loss= tf.keras.losses.CategoricalCrossentropy(from_logits=True),
+                optimizer="adam",
+                metrics=['accuracy']
+            )
+    
+            train_keras_model(model = model, train_data = (self.proxy_data, self.proxy_labels), test_data = None, epochs=20, batch_size = self.args.batch_size, verbose=0)
             print("initial alignment done for client ", id)
-            train_keras_model(model = model, train_data = (self.proxy_data, self.proxy_labels), test_data = None, epochs=20, batch_size = self.args.batch_size, verbose=1)
-            new_args = update_args_with_dict(args, {'use_dp': False})
             model = compile_model(model, new_args) 
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=0)
             print("initial training done for client ", id)
-            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=1)
-            
-            
             self.clients_models.append(model)
+            
+            
+        self.args = update_args_with_dict(args, {'use_dp': original_use_dp})
 
 
     def mixup(self, x1, x2, alpha=0.2):
@@ -489,7 +498,7 @@ class FedAKD:
 
     def run(self, rounds, local_epochs = 1):
 
-
+        times, accuracies = [], []
         for r in range(rounds): 
             t0 = time.time()
             print("FedAKD round : ", r)
@@ -524,8 +533,11 @@ class FedAKD:
             
             kd_loss, kd_acc = self.test()
             t1 = time.time()
-            print("FedAKD round {}, accuracy:{} ".format(r, kd_acc))
-        return kd_acc
+            print("FedAKD round {}, time:{}, accuracy:{} ".format(r, t1-t0, kd_acc))
+            times.append(t1-t0)
+            accuracies.append(kd_acc)
+
+        return accuracies, times 
             
 
 

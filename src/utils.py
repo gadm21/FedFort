@@ -205,15 +205,16 @@ def create_new_cnn_keras_model(input_shape, num_classes, weight_decay=0.0000, co
     model = tf.keras.Sequential([
         tf.keras.layers.Conv2D(
             16,
-            8,
-            strides=2,
+            5,
             padding='same',
             activation='relu',
             input_shape= input_shape),
         tf.keras.layers.MaxPool2D(2, 1),
         tf.keras.layers.Conv2D(
-            32, 4, strides=2, padding='valid', activation='relu'),
+            32, 3, padding='valid', activation='relu'),
         tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(320, activation='relu'),
+        tf.keras.layers.Dropout(0.1),
         tf.keras.layers.Dense(32, activation='relu'),
         tf.keras.layers.Dense(num_classes)
     ])
