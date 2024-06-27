@@ -71,6 +71,10 @@ def run_experiment(id, args) :
     if args.learning_algorithm == 'central' :
         print("Running centralized training")
 
+        print("Centralized training")
+        print("train data shape: ", train_data[0].shape)
+        print("test data shape: ", test_data[0].shape)
+
         centralized_model = create_model_based_on_data(args, compile_model = False) 
         centralized_model = compile_model(centralized_model, args)
         callbacks = {
@@ -80,7 +84,7 @@ def run_experiment(id, args) :
         }
         t0 = time.time()
         print("Central training started...")
-        history = train_keras_model(centralized_model, train_data, test_data, epochs=args.rounds, batch_size = args.batch_size, verbose=0, **callbacks)
+        history = train_keras_model(centralized_model, train_data, test_data, epochs=10, batch_size = args.batch_size, verbose=1, **callbacks)
         t1 = time.time()
         print("Central time taken: " + str(t1-t0) + " seconds")
 
@@ -95,6 +99,9 @@ def run_experiment(id, args) :
         print("Running local training")
 
         centralized_data, clients_data, external_data, p = split_data(train_data, args.num_clients, args.local_size)
+        print("train data shape: ", clients_data[0][0].shape)
+        print("test data shape: ", test_data[0].shape)
+
         for client_id in range(args.num_clients) :
             client_model = create_model_based_on_data(args, compile_model = False) 
             client_model = compile_model(client_model, args)
@@ -103,7 +110,7 @@ def run_experiment(id, args) :
                 'lr_reduction_patience' : args.lr_reduction_patience,
                 'csv_logger_path' : join(experiment_dir, f'client_{client_id}.csv')
             }
-            history = train_keras_model(client_model, clients_data[client_id], test_data, epochs=args.rounds, batch_size = args.batch_size, verbose=0, **callbacks)
+            history = train_keras_model(client_model, clients_data[client_id], test_data, epochs=10, batch_size = args.batch_size, verbose=0, **callbacks)
 
             print(f"Client {client_id} accuracy: ", history.history['val_accuracy'][-1])
 
@@ -196,13 +203,13 @@ def run_experiment(id, args) :
 
 def run_path1(args) : 
 
-    learning_algorithms = [] 
-    if args.learning_algorithm == 'central' :
-        learning_algorithms = ['central', 'local']
-    else : 
-        learning_algorithms = ['fedavg']
+    learning_algorithms = ['fedavg'] 
+    # if args.learning_algorithm == 'central' :
+    #     learning_algorithms = ['central', 'local']
+    # else : 
+    #     learning_algorithms = ['fedavg']
 
-    pprefix = 'tvt++++'
+    pprefix = 'tvt+++++'
     if not args.use_dp :
         for learning_algorithm in learning_algorithms : 
             args.learning_algorithm = learning_algorithm
@@ -215,7 +222,7 @@ def run_path1(args) :
             print("Done experiment " + experiment_id )
     else : 
         dp_types = ['dp']
-        dp_epsilons = [0.1, 1, 10, 100, 1000]
+        dp_epsilons = [0.1, 1000, 1, 10, 100]
         for dp_type in dp_types :
             for ep in dp_epsilons :
                 for learning_algorithm in learning_algorithms : 
@@ -288,7 +295,7 @@ if __name__ == "__main__" :
     parser.add_argument('--dataset', default = 'cifar10', metavar='DATASET', help='Specify the dataset')  # Mandatory dataset argument
     parser.add_argument('--learning_algorithm', default='fedavg', help='central, local, fedavg, fedmd, fedakd')  # Optional learning_algorithm argument
     parser.add_argument('--proxy_data_size', type = int, default=5000, help='Number of epochs') # Optional epochs argument
-    parser.add_argument('--num_clients', type = int, default=10, help='Number of clients participating in FL')  # Optional num_clients argument
+    parser.add_argument('--num_clients', type = int, default=7, help='Number of clients participating in FL')  # Optional num_clients argument
     parser.add_argument('--local_size', type = int, default=3000, help='size of data for each client')  # Optional num_clients argument
     parser.add_argument('--batch_size', type = int, default=26, help='Batch size')  # Optional num_clients argument
     parser.add_argument('--rounds', type = int, default=30, help='Number of global') # Optional rounds argument
@@ -312,7 +319,7 @@ if __name__ == "__main__" :
     parser.add_argument('--target_size', type = int, default=20_000, help='Target model data size')  # Data size for target model
 
     # DP parameters
-    parser.add_argument('--use_dp', dest='use_dp', action='store_false')
+    parser.add_argument('--use_dp', dest='use_dp', action='store_false') # store_true means False by default
     parser.add_argument('--dp_epsilon', type = float, default=0.5, help='Privacy budget')  # Optional target_model argument
     parser.add_argument('--dp_delta', type = float, default=1e-5, help='Privacy budget')  # Optional target_model argument
     parser.add_argument('--dp_norm_clip', type = float, default=1.5, help='Privacy budget')  # Optional target_model argument

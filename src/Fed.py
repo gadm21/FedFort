@@ -173,17 +173,23 @@ class FedAvg :
         self.all_labels = np.concatenate(self.all_labels, axis=0)
 
         oiriginal_use_dp = args.use_dp
+        # initial training without dp (compile the model with use_dp = False)
         new_args = update_args_with_dict(args, {'use_dp': False})
         self.clients_models = []
         for c in range(len(clients_data) ) : 
             model = clone_model(initial_model)
 
             model = compile_model(model, new_args) 
-            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=20, batch_size = self.args.batch_size, verbose=0)
-            print("initial training done for client ", id)
+            train_keras_model(model = model, train_data = clients_data[c], test_data = self.test_data, epochs=5, batch_size = self.args.batch_size, verbose=1)
+            print("initial training done for client ", c)
             self.clients_models.append(model)
 
+        # reset the use_dp to the original value
         self.args = update_args_with_dict(args, {'use_dp': oiriginal_use_dp})
+        for c in range(len(clients_data)) : 
+            self.clients_models[c] = compile_model(self.clients_models[c], self.args)
+            
+
         self.losses, self.accs = [], []
 
     def run(self, rounds, local_epochs = 1) :
