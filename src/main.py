@@ -297,7 +297,7 @@ if __name__ == "__main__" :
     parser.add_argument('--proxy_data_size', type = int, default=5000, help='Number of epochs') # Optional epochs argument
     parser.add_argument('--num_clients', type = int, default=7, help='Number of clients participating in FL')  # Optional num_clients argument
     parser.add_argument('--local_size', type = int, default=3000, help='size of data for each client')  # Optional num_clients argument
-    parser.add_argument('--batch_size', type = int, default=26, help='Batch size')  # Optional num_clients argument
+    parser.add_argument('--batch_size', type = int, default=12, help='Batch size')  # Optional num_clients argument
     parser.add_argument('--rounds', type = int, default=30, help='Number of global') # Optional rounds argument
     parser.add_argument('--local_epochs', type = int, default=4, help='Number of epochs') # Optional epochs argument
     parser.add_argument('--lr', type = float, default=0.01, help='Learning rate') # Optional learning rate argument
