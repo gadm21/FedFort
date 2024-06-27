@@ -296,32 +296,41 @@ def attack_model_fn():
 
 
 
+
 # train keras model
-def train_keras_model(model, train_data, test_data = None, epochs = 1, batch_size = 32, verbose=1, early_stop_patience=None, lr_reduction_patience=None, csv_logger_path=None):
+def train_keras_model(model, train_data, test_data=None, epochs=1, batch_size=32, verbose=1, early_stop_patience=None, lr_reduction_patience=None, csv_logger_path=None):
     
     callbacks = []
-    if early_stop_patience is not None and early_stop_patience > 0 : 
+    if early_stop_patience is not None and early_stop_patience > 0: 
         early_stopping = EarlyStopping(monitor='val_loss', patience=early_stop_patience, restore_best_weights=True)
         callbacks.append(early_stopping)
-    if lr_reduction_patience is not None and lr_reduction_patience > 0 :
-        lr_reduction = ReduceLROnPlateau(monitor='val_loss', patience=lr_reduction_patience, verbose=1, factor=0.7, min_lr=0.000_01)
+    if lr_reduction_patience is not None and lr_reduction_patience > 0:
+        lr_reduction = ReduceLROnPlateau(monitor='val_loss', patience=lr_reduction_patience, verbose=1, factor=0.7, min_lr=0.00001)
         callbacks.append(lr_reduction)
-    if csv_logger_path is not None :
+    if csv_logger_path is not None:
         csv_logger = CSVLogger(csv_logger_path)
         callbacks.append(csv_logger)
 
-    # Create a tf.data.Dataset from your data
+    # Create a tf.data.Dataset from your data using generators
     train_dataset = tf.data.Dataset.from_tensor_slices(train_data)
-    train_dataset = train_dataset.shuffle(len(train_data[0])).batch(batch_size, drop_remainder=True)
+    train_dataset = train_dataset.shuffle(len(train_data[0])).batch(batch_size, drop_remainder = True).prefetch(tf.data.experimental.AUTOTUNE)
 
     # If test_data is provided, create a tf.data.Dataset for it as well
     if test_data is not None:
         test_dataset = tf.data.Dataset.from_tensor_slices(test_data)
-        test_dataset = test_dataset.batch(batch_size, drop_remainder=True)
+        test_dataset = test_dataset.batch(batch_size, drop_remainder = True).prefetch(tf.data.experimental.AUTOTUNE)
     else:
         test_dataset = None
 
-    return model.fit(train_dataset, epochs=epochs, batch_size=batch_size, verbose=verbose, validation_data=test_dataset, callbacks = callbacks)
+    history = model.fit(train_dataset, epochs=epochs, verbose=verbose, validation_data=test_dataset, callbacks=callbacks)
+
+    # Clear datasets from memory after training
+    del train_dataset
+    if test_dataset is not None:
+        del test_dataset
+
+    return history
+
 
 
 # evaluate keras model
