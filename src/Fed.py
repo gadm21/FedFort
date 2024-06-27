@@ -188,7 +188,10 @@ class FedAvg :
         self.args = update_args_with_dict(args, {'use_dp': oiriginal_use_dp})
         for c in range(len(clients_data)) : 
             self.clients_models[c] = compile_model(self.clients_models[c], self.args)
-            
+        
+        print("Fedavg: Initial training done for all clients")
+        print(self.args) 
+        print("____________________________________________________________")
 
         self.losses, self.accs = [], []
 
@@ -494,7 +497,14 @@ class FedAKD:
             
             
         self.args = update_args_with_dict(args, {'use_dp': original_use_dp})
+        for c in range(len(clients_data)) : 
+            self.clients_models[c] = compile_model(self.clients_models[c], self.args)
+        
+        print("Fedavg: Initial training done for all clients")
+        print(self.args) 
+        print("____________________________________________________________")
 
+        self.losses, self.accs = [], []
 
     def mixup(self, x1, x2, alpha=0.2):
         l = np.random.beta(alpha, alpha)
